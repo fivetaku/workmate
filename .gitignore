@@ -1,0 +1,39 @@
+# Session-derived personal data (per-user, not committed)
+.claude/skills/_candidates/pending.json
+.claude/skills/_candidates/backups/*
+!.claude/skills/_candidates/backups/.gitkeep
+.claude/wrap-queue/*
+!.claude/wrap-queue/.gitkeep
+
+# OMC runtime state (regenerates on each session)
+.omc/
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Personal work folder content (preserve structure only)
+40-personal/**/*.md
+40-personal/**/*.txt
+!40-personal/**/.gitkeep
+
+# Daily session memos (per-user)
+memory/daily/*.md
+!memory/daily/.gitkeep
+memory/state/*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Archives / temp
+*.zip
+*.tar.gz
+/tmp/
+
+# Generated reports (optional — comment out if you want to commit them)
+# reports/

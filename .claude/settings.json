@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat .claude/session/BOOT.md 2>/dev/null; echo '\\n---\\n## Memory Wiki Index'; cat memory/MEMORY.md 2>/dev/null || echo '(empty)'; echo '\\n---\\n## 오늘 일지'; TODAY=$(date +%Y-%m-%d 2>/dev/null || date -u +%Y-%m-%d); cat \"memory/daily/${TODAY}.md\" 2>/dev/null || echo '(아직 없음)'; echo '\\n---\\n## 어제 일지'; YESTERDAY=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d 'yesterday' +%Y-%m-%d 2>/dev/null || echo SKIP); if [ \"$YESTERDAY\" != SKIP ]; then cat \"memory/daily/${YESTERDAY}.md\" 2>/dev/null || echo '(없음)'; fi; echo '\\n---\\n## 스킬 후보 (candidate/strong만 표시, observed는 숨김)'; python3 -c \"import json,sys; d=json.load(open('.claude/skills/_candidates/pending.json')); cs=[x for x in d if x.get('status') in ('candidate','strong')]; print(json.dumps(cs,ensure_ascii=False,indent=2) if cs else '(성숙한 후보 없음)')\" 2>/dev/null || echo '(없음)'; echo '\\n---\\n## Wrap Queue'; if ls .claude/wrap-queue/*.md 1>/dev/null 2>&1; then echo '⚠️ 이전 세션 wrap 대기 중:'; ls -1 .claude/wrap-queue/*.md; else echo '(없음)'; fi"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Find the most recent .jsonl session file under ~/.claude/projects/ for the current workspace. Read the last 200 lines. Extract: 결정(decisions), 사용자 선호(preferences), 안정적 지식(stable knowledge), 반복되는 데이터/도메인 인사이트, 핵심 에러 해결책. Append each item as a 1-line summary to the ## Unsorted section at the end of memory/MEMORY.md (do NOT create wiki pages — tool budget is tight). Write handoff to memory/daily/{today YYYY-MM-DD}.md. Maximum 10 tool calls.",
+            "model": "claude-sonnet-4-6",
+            "timeout": 120000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '서브에이전트 완료. 결과에 findings, risks, next actions가 포함되어야 합니다.'"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/scripts/session-end-wrap.py 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
