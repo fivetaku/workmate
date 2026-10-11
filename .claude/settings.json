@@ -16,10 +16,8 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Find the most recent .jsonl session file under ~/.claude/projects/ for the current workspace. Read the last 200 lines. Extract: 결정(decisions), 사용자 선호(preferences), 안정적 지식(stable knowledge), 반복되는 데이터/도메인 인사이트, 핵심 에러 해결책. Append each item as a 1-line summary to the ## Unsorted section at the end of memory/MEMORY.md (do NOT create wiki pages — tool budget is tight). Write handoff to memory/daily/{today YYYY-MM-DD}.md. Maximum 10 tool calls.",
-            "model": "claude-sonnet-4-6",
-            "timeout": 120000
+            "type": "command",
+            "command": "python3 .claude/scripts/session-end-wrap.py 2>/dev/null || true"
           }
         ]
       }

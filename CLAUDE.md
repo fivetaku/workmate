@@ -138,7 +138,7 @@ workmate는 사용 패턴을 학습해 스스로 성장합니다.
 | 훅 | 시점 | 동작 |
 |----|------|------|
 | **SessionStart** | 세션 시작 | BOOT.md + MEMORY.md + 오늘/어제 일지 + 스킬 후보 자동 로드 |
-| **PreCompact** | 컨텍스트 압축 직전 | 결정/선호/인사이트를 `MEMORY.md` `## Unsorted`에 긴급 저장 |
+| **PreCompact** | 컨텍스트 압축 직전 | 그때까지의 세션 요약을 `.claude/wrap-queue/`에 저장 → 다음 세션 시작 시 일지·`## Unsorted`로 반영 |
 | **SessionEnd** | 세션 정상 종료 | 데일리 메모 작성 + `MEMORY.md` `## Unsorted` 갱신 + `_candidates/pending.json` 갱신을 한 번에 수행. SIGKILL/크래시는 발동 안 됨 → 그땐 수동 `/wrap` |
 
 **성장 흐름:**

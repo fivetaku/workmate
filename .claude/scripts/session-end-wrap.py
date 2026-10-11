@@ -13,6 +13,8 @@ WORKSPACE = Path(__file__).resolve().parents[2]  # workmate/
 WRAP_QUEUE = WORKSPACE / ".claude/wrap-queue"
 PENDING = WORKSPACE / ".claude/skills/_candidates/pending.json"
 DAILY_DIR = WORKSPACE / "memory/daily"
+# 세션별로 이미 처리한 이벤트 수 — 재개(resume)된 세션을 처음부터 다시 덤프하지 않기 위함
+OFFSETS = WORKSPACE / "memory/state/wrap-offsets.json"
 # 워크스페이스 절대경로에서 Claude Code 프로젝트 디렉터리를 동적으로 생성
 # ~/.claude/projects/-{sanitized_cwd}/
 _sanitized = str(WORKSPACE).replace("/", "-").lstrip("-")
@@ -182,7 +184,21 @@ def build_summary_markdown(log_path, user_msgs, tools, decisions):
     return "\n".join(md)
 
 
-def update_pending(tools, user_msgs):
+def load_offsets():
+    try:
+        with open(OFFSETS) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_offsets(offsets):
+    OFFSETS.parent.mkdir(parents=True, exist_ok=True)
+    with open(OFFSETS, "w") as f:
+        json.dump(offsets, f, indent=2)
+
+
+def update_pending(tools, user_msgs, session_id):
     """pending.json 갱신 (3단계 성숙 모델, 멱등성)."""
     tool_names = [t["name"] for t in tools]
     unique_tools = list(dict.fromkeys(tool_names))
@@ -204,12 +220,21 @@ def update_pending(tools, user_msgs):
     has_keyword = bool(re.search(r"(자동화|매번|반복|항상)", all_user_text))
 
     if existing:
+        seen_ids = existing.setdefault("_session_ids", [])
+        if session_id in seen_ids:
+            # 같은 세션을 이어서 연 경우 — 다른 날이어도 반복으로 세지 않는다
+            existing["last_seen"] = today
+            seen_ids = None
         sessions = existing.get("sessions", [])
-        if today in sessions:
+        if seen_ids is None:
+            pass
+        elif today in sessions:
+            seen_ids.append(session_id)
             existing["last_seen"] = today
         else:
             existing["count"] = existing.get("count", 1) + 1
             sessions.append(today)
+            seen_ids.append(session_id)
             existing["sessions"] = sessions
             existing["last_seen"] = today
             if existing["count"] >= 5:
@@ -230,6 +255,7 @@ def update_pending(tools, user_msgs):
             "evidence": f"{len(unique_tools)} unique tools, {len(tools)} total calls",
             "confidence": 0.3,
             "_tool_key": tool_key,
+            "_session_ids": [session_id],
         })
 
     with open(PENDING, "w") as f:
@@ -257,9 +283,20 @@ def main():
     if not log_path:
         return
 
-    events = parse_jsonl(log_path)
-    if not events:
+    all_events = parse_jsonl(log_path)
+    if not all_events:
         return
+
+    session_full_id = os.path.basename(log_path).replace(".jsonl", "")
+    offsets = load_offsets()
+    offset = offsets.get(session_full_id, 0)
+    if offset > len(all_events):
+        offset = 0  # 로그가 새로 쓰였으면 처음부터
+    events = all_events[offset:]
+    offsets[session_full_id] = len(all_events)
+    save_offsets(offsets)
+    if not events:
+        return  # 지난 wrap 이후 새 내용 없음
 
     user_msgs = extract_user_messages(events)
     tools = extract_tool_calls(events)
@@ -277,11 +314,11 @@ def main():
     WRAP_QUEUE.mkdir(parents=True, exist_ok=True)
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    session_id = os.path.basename(log_path).replace(".jsonl", "")[:12]
+    session_id = session_full_id[:12]
     summary_path = WRAP_QUEUE / f"{ts}-{session_id}.md"
     summary_path.write_text(summary_md)
 
-    update_pending(tools, user_msgs)
+    update_pending(tools, user_msgs, session_full_id)
     print(f"wrap: {summary_path.name} ({len(tools)} tools, {len(user_msgs)} turns)")
 
 

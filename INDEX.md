@@ -25,7 +25,7 @@ workmate/
 
 ```
 .claude/
-├── settings.json       ← 훅 설정 (SessionStart / PreCompact / Stop / SubagentStop)
+├── settings.json       ← 훅 설정 (SessionStart / PreCompact / SessionEnd / SubagentStop)
 ├── session/
 │   └── BOOT.md         ← 세션 시작 체크리스트 (SessionStart 훅이 자동 cat)
 ├── rules/              ← 9개 모듈화된 계약 문서 (CLAUDE.md가 import)
@@ -69,7 +69,7 @@ memory/
 | 훅 | 시점 | 동작 |
 |---|-----|-----|
 | **SessionStart** | 세션 시작 | BOOT.md + MEMORY.md + 오늘/어제 daily + pending.json 자동 출력 |
-| **PreCompact** | 컨텍스트 압축 직전 | MEMORY.md `## Unsorted`에 긴급 저장 |
+| **PreCompact** | 컨텍스트 압축 직전 | 세션 요약을 `.claude/wrap-queue/`에 저장 (다음 세션에서 반영) |
 | **Stop** | 세션 종료 | 반복 패턴 감지 → pending.json에 스킬 후보 merge |
 | **SubagentStop** | 서브에이전트 종료 | findings/risks/next actions 포함 확인 nudge |
 

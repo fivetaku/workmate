@@ -37,3 +37,12 @@ __pycache__/
 
 # Generated reports (optional — comment out if you want to commit them)
 # reports/
+
+# 업무 데이터·보고서·회사 맥락 — 이 저장소는 공개(PUBLIC)라 올리지 않는다 (2026-10-11)
+reports/*
+!reports/.gitkeep
+memory/wiki/domain-context/*.md
+!memory/wiki/domain-context/.gitkeep
+
+# OMO 런타임 상태
+.omo/
